@@ -17,27 +17,17 @@ class AuthController extends Controller
                 'middle_name'       => 'nullable|string|max:100',
                 'last_name'         => 'required|string|max:100',
                 'second_last_name'  => 'required|string|max:100',
-                'email'             => 'required|string|email|max:255',
-                'phone'             => 'required|string|max:20',
+                'email'             => 'required|string',
+                'phone'             => 'nullable|string|max:20',
                 'employee_number'   => 'required|string|max:50',
-                'password'          => 'required|string',
-                'user_type'         => 'required|integer|in:1,2,3,4',
                 'position'          => 'required|string|max:255',
-                'url'               => 'required|string',
             ], [
                 'first_name.required' => 'El primer nombre es obligatorio.',
-                'middle_name.string'  => 'El segundo nombre debe ser un texto válido.',
                 'last_name.required' => 'El primer apellido es obligatorio.',
                 'second_last_name.required' => 'El segundo apellido es obligatorio.',
                 'email.required' => 'El correo electrónico es obligatorio.',
-                'email.email' => 'Debe proporcionar un correo electrónico válido.',
-                'phone.required' => 'El número de teléfono es obligatorio.',
                 'employee_number.required' => 'El número de colaborador es obligatorio.',
-                'password.required' => 'La contraseña es obligatoria.',
-                'user_type.required' => 'El tipo de usuario es obligatorio.',
-                'user_type.in' => 'El tipo de usuario seleccionado no es válido.',
                 'position.required' => 'El puesto es obligatorio.',
-                'url.required' => 'La URL o imagen de usuario es obligatoria.',
             ]);
 
             if ($validator->fails()) {
@@ -45,8 +35,20 @@ class AuthController extends Controller
             }
 
             $data = $request->all();
+
+            $data['url'] = $request->employee_number . '_f';
+
+            $position = strtoupper(trim($request->position));
+
+            if (str_contains($position, 'DIRECTOR')) {
+                $data['user_type'] = User::DIRECTOR;
+            } elseif (str_contains($position, 'GERENTE')) {
+                $data['user_type'] = User::GERENTE;
+            } else {
+                $data['user_type'] = $request->user_type ?? User::VIEWER;
+            }
+
             $data['password'] = Hash::make($request->password);
-            $data['user_type'] = $request->user_type ?? User::VIEWER;
 
             $user = User::create($data);
 
