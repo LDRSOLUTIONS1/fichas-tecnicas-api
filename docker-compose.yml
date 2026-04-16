@@ -1,0 +1,100 @@
+version: '3.8'
+
+services:
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: fichas_app
+    restart: unless-stopped
+    working_dir: /var/www
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - fichas_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: fichas_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - fichas_network
+
+  mysql:
+    image: mysql:8.0
+    container_name: fichas_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: fichastecnicas
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_USER: fichas_user
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - fichas_network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: fichas_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: mysql
+      MYSQL_ROOT_PASSWORD: root
+    depends_on:
+      - mysql
+    networks:
+      - fichas_network
+
+  redis:
+    image: redis:alpine
+    container_name: fichas_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - fichas_network
+
+  queue:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: fichas_queue
+    command: php artisan queue:work --tries=3 --timeout=90
+    depends_on:
+      - app
+      - redis
+    volumes:
+      - .:/var/www
+    networks:
+      - fichas_network
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: docker/php/Dockerfile
+    container_name: fichas_scheduler
+    command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
+    depends_on:
+      - app
+    volumes:
+      - .:/var/www
+    networks:
+      - fichas_network
+
+volumes:
+  mysql_data:
+
+networks:
+  fichas_network:
