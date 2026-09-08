@@ -38,4 +38,9 @@ class User extends Authenticatable
         'deleted_at',
         'password',
     ];
+
+    public function scopeActivos($query)
+    {
+        return $query->whereIn('estado', [1, 2]);
+    }
 }

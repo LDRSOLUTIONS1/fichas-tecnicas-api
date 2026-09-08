@@ -28,7 +28,7 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     ]);
 });
 
-Route::middleware('auth:sanctum')->group(function () {  
+Route::middleware('auth:sanctum')->group(function () {
     Route::get('/technical-sheets/development', [TechnicalSheetController::class, 'inDevelopment']);
     Route::get('/technical-sheets/completed', [TechnicalSheetController::class, 'completed']);
     Route::resource('/technical-sheets', TechnicalSheetController::class);
@@ -45,4 +45,6 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login/{employee_number}', [AuthController::class, 'login']);
+Route::post('/login/{employee_number}', [AuthController::class, 'logincollaborator']);
+Route::post('/login', [AuthController::class, 'login']);
+

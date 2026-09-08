@@ -67,7 +67,7 @@ class AuthController extends Controller
         }
     }
 
-    public function login($employee_number)
+    public function logincollaborator($employee_number)
     {
         try {
             $user = User::where('employee_number', $employee_number)->first();
@@ -91,5 +91,79 @@ class AuthController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    public function login(Request $request)
+    {
+        $jwt = $request->cookie('token');
+
+        if (!$jwt) {
+            return response()->json([
+                'message' => 'No existe token'
+            ], 401);
+        }
+
+        try {
+            $decoded = JWT::decode(
+                $jwt,
+                new Key(config('jwt.secret_rh'), 'HS256')
+            );
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Token inválido'
+            ], 401);
+        }
+
+        $user = User::where(
+            'external_rh_id',
+            $decoded->id_colaborador
+        )->first();
+
+        if (!$user) {
+            $user = User::where(
+                'email',
+                $decoded->correo
+            )->first();
+        }
+
+        if ($user) {
+            $user->update([
+                'external_rh_id' => $decoded->id_colaborador,
+                'collaborator_number' => $decoded->id_colaborador,
+                'name' => $decoded->nombre,
+                'email' => $decoded->correo,
+                'brand' => $decoded->marca,
+                'location_name' => $decoded->nombre_sede
+            ]);
+        } else {
+            $user = User::create([
+                'external_rh_id' => $decoded->id_colaborador,
+                'collaborator_number' => $decoded->id_colaborador,
+                'role_id' => 3,
+                'name' => $decoded->nombre,
+                'email' => $decoded->correo,
+                'brand' => $decoded->marca,
+                'location_name' => $decoded->nombre_sede,
+                'password' => Hash::make(Str::random(40))
+            ]);
+        }
+
+        $tokenResult = $user->createToken('reportes');
+        $token = $tokenResult->plainTextToken;
+
+        AccessLog::create([
+            'user_id'    => $user->id,
+            'token_id'   => $tokenResult->accessToken->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'login_at'   => now(),
+        ]);
+
+        return response()->json([
+
+            'token' => $token,
+            'user' => $user
+
+        ]);
     }
 }
