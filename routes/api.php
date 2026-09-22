@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LogsController;
 use App\Http\Controllers\ModelController;
 use App\Http\Controllers\SegmentController;
 use App\Http\Controllers\SubcategoryController;
@@ -42,6 +43,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::resource('/models', ModelController::class);
 
     Route::resource('/users', UserController::class);
+
+    Route::resource('/logs', LogsController::class);
 });
 
 Route::post('/register', [AuthController::class, 'register']);
